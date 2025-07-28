@@ -89,3 +89,41 @@ def durand_kerner(
             break
         roots = new_roots
     return roots
+
+
+def solve(
+    expr: str,
+    domain: Optional[Tuple[float, float]] = None,
+    tol: float = 1e-8,
+    max_subintervals: int = 100,
+) -> List[complex]:
+    from src.parser import parse
+
+    lhs, rhs = parse(expr)
+
+    # Build function f(x) = lhs - rhs
+    def f(x: complex) -> complex:
+        return eval_ast(lhs, {"x": x}, "x") - eval_ast(rhs, {"x": x}, "x")
+
+    # Polynomial branch
+    if domain is None:
+        # Extract coefficients for polynomial a0 + a1 x + ...
+        raise NotImplementedError("Polynomial coefficient extraction not implemented")
+    # Real roots via Brent over subintervals
+    a, b = domain
+    xs = np.linspace(a, b, max_subintervals + 1)
+    roots: List[complex] = []
+    for i in range(len(xs) - 1):
+        x0, x1 = xs[i], xs[i + 1]
+        try:
+            if f(x0).real * f(x1).real < 0:
+                root = brent(lambda t: f(t).real, x0, x1, tol)
+                roots.append(root)
+        except ValueError:
+            continue
+    # Remove duplicates within tolerance
+    unique_roots: List[complex] = []
+    for r in roots:
+        if not any(abs(r - u) < tol for u in unique_roots):
+            unique_roots.append(r)
+    return unique_roots
