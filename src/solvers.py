@@ -20,3 +20,50 @@ def roots_companion(coeffs: List[complex]) -> List[complex]:
     # Compute eigenvalues
     roots = np.linalg.eigvals(C)
     return roots.tolist()
+
+
+def brent(f, a: float, b: float, tol: float = 1e-8, maxiter: int = 100) -> float:
+    fa, fb = f(a), f(b)
+    if f(a) * f(b) >= 0:
+        raise ValueError("f(a) and f(b) must have different signs")
+    if abs(fa) < abs(fb):
+        a, b, fa, fb = b, a, fb, fa
+    c, fc, d, e = a, fa, b - a, b - a
+    for _ in range(maxiter):
+        if fb == 0 or abs(b - a) < tol:
+            return b
+
+        if fa != fc and fb != fc:
+            # Inverse Quadratic Interpolation (IQI)
+            denom_af = (fa - fb) * (fa - fc)
+            denom_bf = (fb - fa) * (fb - fc)
+            denom_cf = (fc - fa) * (fc - fb)
+            s = a * fb * fc / denom_af + b * fa * fc / denom_bf + c * fa * fb / denom_cf
+        else:
+            # Secant method
+            s = b - fb * (b - a) / (fb - fa)
+
+        cond_bisect = (
+            not ((3 * a + b) / 4 < s < b)
+            or abs(e) < tol
+            or abs(s - b) >= abs(b - c) / 2
+        )
+        if cond_bisect:
+            # Bisection step
+            s = (a + b) / 2
+            e = d = b - a
+        else:
+            e, d = d, b - s
+
+        fs = f(s)
+        c, fc = b, fb
+
+        if fa * fs < 0:
+            b, fb = s, fs
+        else:
+            a, fa = s, fs
+
+        if abs(fa) < abs(fb):
+            a, b = b, a
+            fa, fb = fb, fa
+    return b
