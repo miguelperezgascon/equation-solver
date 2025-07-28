@@ -67,3 +67,25 @@ def brent(f, a: float, b: float, tol: float = 1e-8, maxiter: int = 100) -> float
             a, b = b, a
             fa, fb = fb, fa
     return b
+
+
+def durand_kerner(
+    coeffs: List[complex], tol: float = 1e-8, maxiter: int = 100
+) -> List[complex]:
+    n = len(coeffs) - 1
+    # Initial guesses: roots of unity scaled
+    roots = [cmath.exp(2j * cmath.pi * i / n) for i in range(n)]
+    for _ in range(maxiter):
+        new_roots = []
+        for i in range(n):
+            prod = 1
+            for j in range(n):
+                if i != j:
+                    prod *= roots[i] - roots[j]
+            # Evaluate poly at roots[i]
+            p = sum(coeffs[k] * roots[i] ** k for k in range(n + 1))
+            new_roots.append(roots[i] - p / prod)
+        if all(abs(new_roots[i] - roots[i]) < tol for i in range(n)):
+            break
+        roots = new_roots
+    return roots
