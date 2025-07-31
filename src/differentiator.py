@@ -2,7 +2,7 @@
 from src.ast import AST, Number, Variable, UnaryOp, BinaryOp
 
 
-def diff_ast(node: AST, var: str = "s") -> AST:
+def diff_ast(node: AST, var: str = "X") -> AST:
     match node:
         case Number(_):
             return Number(0)

@@ -16,7 +16,8 @@ def roots_companion(coeffs: List[complex]) -> List[complex]:
     # Construct cmpanion matrix
     C = np.zeros((n, n), dtype=complex)
     C[:-1, 1:] = np.eye(n - 1)
-    C[-1, :] = b[::-1]
+    # C[-1, :] = b[::-1]
+    C[-1, :] = b
     # Compute eigenvalues
     roots = np.linalg.eigvals(C)
     return roots.tolist()
