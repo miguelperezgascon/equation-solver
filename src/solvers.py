@@ -1,5 +1,5 @@
 # solvers.py
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 import numpy as np
 import cmath
 from src.ast import AST, Number, Variable, UnaryOp, BinaryOp
@@ -90,7 +90,8 @@ def durand_kerner(
         roots = new_roots
     return roots
 
-def _extract_coeffs(ast: AST, var: str = 'x') -> Dict[int, complex]:
+
+def _extract_coeffs(ast: AST, var: str = "x") -> Dict[int, complex]:
     """
     Recursively extract polynomial coefficients from AST as a map power->coeff.
     """
@@ -99,34 +100,39 @@ def _extract_coeffs(ast: AST, var: str = 'x') -> Dict[int, complex]:
     if isinstance(ast, Variable) and ast.name == var:
         return {1: 1}
     if isinstance(ast, BinaryOp):
-        if ast.op == '+':
+        if ast.op == "+":
             c1 = _extract_coeffs(ast.left, var)
             c2 = _extract_coeffs(ast.right, var)
-            res = c1.copy()
-            for p, c in c2.items(): res[p] = res.get(p,0)+c
-            return res
-        if ast.op == '-':
+            for p, c in c2.items():
+                c1[p] = c1.get(p, 0) + c
+            return c1
+        if ast.op == "-":
             c1 = _extract_coeffs(ast.left, var)
             c2 = _extract_coeffs(ast.right, var)
-            res = c1.copy()
-            for p, c in c2.items(): res[p] = res.get(p,0)-c
-            return res
-        if ast.op == '*':
+            for p, c in c2.items():
+                c1[p] = c1.get(p, 0) - c
+            return c1
+        if ast.op == "*":
             c1 = _extract_coeffs(ast.left, var)
             c2 = _extract_coeffs(ast.right, var)
             res: Dict[int, complex] = {}
             for p1, c1v in c1.items():
                 for p2, c2v in c2.items():
-                    res[p1+p2] = res.get(p1+p2,0)+c1v*c2v
+                    res[p1 + p2] = res.get(p1 + p2, 0) + c1v * c2v
             return res
-        if ast.op == '^' and isinstance(ast.right, Number):
-            exp = int(ast.right.value)
+        if ast.op == "^" and isinstance(ast.right, Number):
+            exp = int(ast.right.value.real)
             base = ast.left
-            res = {0:1}
+            res = {0: 1}
             for _ in range(exp):
-                res = {p1+p2: c1*c2 for p1,c1 in res.items() for p2,c2 in _extract_coeffs(base,var).items()}
+                res = {
+                    p1 + p2: c1 * c2
+                    for p1, c1 in res.items()
+                    for p2, c2 in _extract_coeffs(base, var).items()
+                }
             return res
     raise ValueError("Non-polynomial AST node encountered")
+
 
 def solve(
     expr: str,
@@ -138,19 +144,18 @@ def solve(
 
     lhs, rhs = parse(expr)
 
-    # Build function f(x) = lhs - rhs
-    def f(x: complex) -> complex:
-        return eval_ast(lhs, {"x": x}, "x") - eval_ast(rhs, {"x": x}, "x")
-
     # Polynomial branch
     if domain is None:
         # Extract coefficients for polynomial a0 + a1 x + ...
-        coeffs_map = extract_coeffs(BinaryOp('-',lhs,rhs))
+        coeffs_map = _extract_coeffs(BinaryOp("-", lhs, rhs))
         max_pow = max(coeffs_map)
-        coeffs = coeffs_map.get(i,0) for i in range(max_pow+1)
+        coeffs = [coeffs_map.get(i, 0) for i in range(max_pow + 1)]
         return roots_companion(coeffs)
+
     # generic real root finding
-    f = lambda x: eval_ast(lhs, {'x':x}, 'x') - eval_ast(rhs, {'x':x}, 'x')
+    def f(x: complex) -> complex:
+        return eval_ast(lhs, {"x": x}, "x") - eval_ast(rhs, {"x": x}, "x")
+
     a, b = domain
     xs = np.linspace(a, b, max_subintervals + 1)
     roots: List[complex] = []
