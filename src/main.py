@@ -1,73 +1,39 @@
-# src/main.py
-import sys
-import re
-from typing import Tuple
-from parser import tokenize, to_rpn
-from solver import solve_linear, solve_quadratic, evaluate_rpn
-
-
-def extract_coeffs(expr: str) -> Tuple[float, float, float]:
-    """
-    Extract coefficients a, b, c from a polynomial expression up to degree 2.
-    Supports expressions of form: ax^2 + bx + c.
-    """
-    s = expr.replace(" ", "")
-    pat_a = re.compile(r"([+-]?\d*\.?\d*)\*?x\^2")
-    pat_b = re.compile(r"([+-]?\d*\.?\d*)\*?x(?!\^)")
-    pat_c = re.compile(r"([+-]?\d+\.?\d*)(?![x\d*])$")
-
-    def parse(pat: re.Pattern) -> float:
-        m = pat.search(s)
-        if not m:
-            return 0.0
-        v = m.group(1)
-        if v in ("", "+"):
-            return 1.0
-        if v == "-":
-            return -1.0
-        return float(v)
-
-    return (parse(pat_a), parse(pat_b), parse(pat_c))
+# main.py
+import argparse
+from src.solvers import solve
 
 
 def main():
-    # Read expression from args or input
-    if len(sys.argv) > 1:
-        expr = " ".join(sys.argv[1:])
-    else:
-        expr = input("Enter equation (e.g. 2*x^2 + 3*x + 4 = 0): ")
+    parser = argparse.ArgumentParser(
+        description="Solve equations of the form f(x)=0 (polynomial or generic)."
+    )
+    parser.add_argument(
+        "expr",
+        type=str,
+        help='Equation in infix form, e.g. "x^2 - 1 = 0" or "sin(x) - 0 = 0"',
+    )
+    parser.add_argument(
+        "--domain",
+        nargs=2,
+        type=float,
+        metavar=("A", "B"),
+        help="Optional real interval [A, B] to search for roots",
+    )
+    args = parser.parse_args()
 
-    # Split LHS/RHS
-    if "=" in expr:
-        lhs, rhs = expr.split("=", 1)
-    else:
-        lhs, rhs = expr, "0"
-    lhs = lhs.strip()
-    rhs = rhs.strip()
+    domain = tuple(args.domain) if args.domain else None
+    roots = solve(args.expr, domain=domain)
 
-    # Normalize: if RHS is zero, use LHS directly; else subtract RHS
-    if rhs == "0":
-        norm = lhs
+    if not roots:
+        print("No roots found.")
     else:
-        norm = f"({lhs})-({rhs})"
-
-    try:
-        a, b, c = extract_coeffs(norm)
-        if a != 0.0:
-            r1, r2 = solve_quadratic(a, b, c)
-            print(f"Quadratic roots: {r1}, {r2}")
-        elif b != 0.0:
-            (r,) = solve_linear(b, c)
-            print(f"Linear root: {r}")
-        else:
-            print("No variable term: constant equation.")
-    except Exception as e:
-        # Fallback: generic RPN evaluation at x=1
-        print(f"Extraction failed ({e}), evaluating at x=1")
-        tokens = tokenize(norm)
-        rpn = to_rpn(tokens)
-        result = evaluate_rpn(rpn, variable_values={"x": 1.0})
-        print(f"Result: {result}")
+        print("Roots found:")
+        for r in roots:
+            # Pretty-print real vs. complex
+            if abs(r.imag) < 1e-8:
+                print(f"  {r.real:.8g}")
+            else:
+                print(f"  {r.real:.8g} + {r.imag:.8g}j")
 
 
 if __name__ == "__main__":
