@@ -66,7 +66,7 @@ Root: [-2.5]
 # Transcendental
 $ python main.py "sin(x) - 0 = 0" --domain 1 4
 Root in domain: [3.1416]
-
+```
 
 ---
 
