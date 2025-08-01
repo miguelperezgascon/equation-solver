@@ -2,7 +2,7 @@
 from src.ast import AST, Number, Variable, UnaryOp, BinaryOp
 
 
-def diff_ast(node: AST, var: str = "X") -> AST:
+def diff_ast(node: AST, var: str = "x") -> AST:
     match node:
         case Number(_):
             return Number(0)
@@ -44,11 +44,15 @@ def diff_ast(node: AST, var: str = "X") -> AST:
             denominator = BinaryOp("^", b, Number(2))
             return BinaryOp("/", numerator, denominator)
         case BinaryOp("^", a, Number(n)):
-            # (a^n)' = n * a^(n-1) * a'
-            return BinaryOp(
-                "*",
-                BinaryOp("*", Number(n), BinaryOp("^", a, Number(n - 1))),
-                diff_ast(a, var),
-            )
+            # (a^n)' = n * a^(n-1) [* a'] (chain rule)
+            n_int = int(n.real)
+            new_power = BinaryOp("^", a, Number(n_int - 1))
+            coeff = Number(n_int)
+            base_deriv = diff_ast(a, var)
+            if isinstance(base_deriv, Number) and base_deriv.value == 1:
+                # avoid product of 1
+                return BinaryOp("*", coeff, new_power)
+            # chain rule
+            return BinaryOp("*", BinaryOp("*", coeff, new_power), base_deriv)
         case _:
             raise NotImplementedError(f"No rule for node: {node}")

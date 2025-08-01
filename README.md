@@ -64,13 +64,9 @@ $ python main.py "2*x + 5 = 0"
 Root: [-2.5]
 
 # Transcendental
-$ python main.py "sin(x) - 0 = 0"
+$ python main.py "sin(x) - 0 = 0" --domain 1 4
 Root in domain: [3.1416]
 
-# Symbolic differentiation
-$ python main.py --diff "x^2"
-Derivative: (2.0 * (x ^ 1.0))
-```
 
 ---
 

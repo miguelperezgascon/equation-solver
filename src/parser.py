@@ -14,35 +14,73 @@ def to_rpn(tokens: List[str]) -> List[str]:
     right_assoc: set[str] = {"^"}
     output: List[str] = []
     op_stack: List[str] = []
+    functions = {"sin", "cos", "tan", "neg"}
+    i = 0
 
     pattern = re.compile(r"^(?:\d+\.?\d*|[A-Za-z_]+)$")
 
-    for token in tokens:
-        if re.match(pattern, token):
+    while i < len(tokens):
+        token = tokens[i]
+        if (
+            re.fullmatch(r"[A-Za-z_]+", token)
+            and i + 1 < len(tokens)
+            and tokens[i + 1] == "("
+        ):
+            op_stack.append(token)
+        elif re.fullmatch(r"\d+\.?\d*|[A-Za-z_]+", token):
             output.append(token)
         elif token == "(":
             op_stack.append(token)
         elif token == ")":
             while op_stack and op_stack[-1] != "(":
                 output.append(op_stack.pop())
-            if not op_stack or op_stack[-1] != "(":
-                raise ValueError("Unbalanced parenthesis")
-            op_stack.pop()
+            op_stack.pop()  # descartar '('
+            if op_stack and op_stack[-1] in functions:
+                output.append(op_stack.pop())
         else:
             while (
                 op_stack
                 and op_stack[-1] != "("
                 and (
-                    (prec.get(op_stack[-1], 0), token not in right_assoc)
-                    > (prec.get(token, 0), False)
+                    (prec[op_stack[-1]] > prec[token])
+                    or (prec[op_stack[-1]] == prec[token] and token not in right_assoc)
                 )
             ):
                 output.append(op_stack.pop())
             op_stack.append(token)
+        i += 1
 
     while op_stack:
         output.append(op_stack.pop())
+
     return output
+
+    # for token in tokens:
+    #     if re.match(pattern, token):
+    #         output.append(token)
+    #     elif token == "(":
+    #         op_stack.append(token)
+    #     elif token == ")":
+    #         while op_stack and op_stack[-1] != "(":
+    #             output.append(op_stack.pop())
+    #         if not op_stack or op_stack[-1] != "(":
+    #             raise ValueError("Unbalanced parenthesis")
+    #         op_stack.pop()
+    #     else:
+    #         while (
+    #             op_stack
+    #             and op_stack[-1] != "("
+    #             and (
+    #                 (prec.get(op_stack[-1], 0), token not in right_assoc)
+    #                 > (prec.get(token, 0), False)
+    #             )
+    #         ):
+    #             output.append(op_stack.pop())
+    #         op_stack.append(token)
+    #
+    # while op_stack:
+    #     output.append(op_stack.pop())
+    # return output
 
 
 def parse_rpn(rpn: List[str]) -> AST:

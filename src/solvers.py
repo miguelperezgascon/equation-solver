@@ -144,14 +144,25 @@ def solve(
     from src.parser import parse
 
     lhs, rhs = parse(expr)
+    poly = None
 
     # Polynomial branch
     if domain is None:
-        # Extract coefficients for polynomial a0 + a1 x + ...
-        coeffs_map = _extract_coeffs(BinaryOp("-", lhs, rhs))
-        max_pow = max(coeffs_map)
-        coeffs = [coeffs_map.get(i, 0) for i in range(max_pow + 1)]
-        return roots_companion(coeffs)
+        try:
+            # Extract coefficients for polynomial a0 + a1 x + ...
+            coeffs_map = _extract_coeffs(BinaryOp("-", lhs, rhs))
+            max_pow = max(coeffs_map)
+            poly = [coeffs_map.get(i, 0) for i in range(max_pow + 1)]
+        except ValueError:
+            poly = None
+
+    if poly is not None:
+        return roots_companion(poly)
+
+    if domain is None:
+        raise ValueError(
+            "Non-polynomial equation. Please provide a real search interval via --domain"
+        )
 
     # generic real root finding
     def f(x: complex) -> complex:

@@ -30,7 +30,7 @@ def test_to_rpn(tokens, rpn):
     "rpn,ast_type",
     [
         (["3", "x", "*"], BinaryOp),
-        (["sin", "x", "sin"], UnaryOp),  # intentionally invalid? adjust
+        (["x", "sin"], UnaryOp),  # intentionally invalid? adjust
     ],
 )
 def test_parse_rpn(rpn, ast_type):
